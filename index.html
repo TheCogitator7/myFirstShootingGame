@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Shooting game</title>
+    </head>
+    <body>
+        <h1>Javascript로 만든 2D 게임</h1>
+        <script>
+            //canvas setting
+            const canvas=document.createElement("canvas");
+            const ctx=canvas.getContext("2d");
+            canvas.width=900;
+            canvas.height=600;
+            document.body.appendChild(canvas);
+
+            //spaceship location
+            let spaceshipX=canvas.width/2-48;
+            let spaceshipY=canvas.height-96;
+
+            //image setting
+            let spaceImage;
+            let spaceshipImage;
+            let virusImage;
+            let enemyImage;
+            let gameoverImage;
+
+            //gameover, score setting
+            let gameOver=false;
+            let score=0;
+
+            //virus location
+            let virusList=[];
+
+            function Virus(){
+                this.x=0;
+                this.y=0;
+                this.init=function(){
+                    this.x=spaceshipX+24;
+                    this.y=spaceshipY;
+                    this.alive=true;
+                    virusList.push(this);
+                }
+                this.update=function(){
+                    this.y-=7;
+                }
+                this.checkHit=function(){
+                    for(let e=0; e<enemyList.length; e++){
+                        if(this.y<=enemyList[e].y && this.x>=enemyList[e].x && this.x<=enemyList[e].x+66){
+                            score+=100;
+                            this.alive=false;
+                            enemyList.splice(e, 1);
+                        }
+                    }
+                }
+            }
+
+            //enemy location
+            let enemyList=[];
+
+            function generateRandom(min, max){
+                let randomNum=Math.floor(Math.random()*(max-min+1))+min;
+                return randomNum;
+            }
+
+            function Enemy(){
+                this.x=0;
+                this.y=0;
+                this.init=function(){
+                    this.y=0;
+                    this.x=generateRandom(0, canvas.width-132);
+
+                    enemyList.push(this);
+                };
+                this.update=function(){
+                    this.y+=3;
+                    if(this.y>canvas.height-66){
+                        gameOver=true;
+                    }
+                }
+            }
+
+            function loadImage(){
+                spaceImage=new Image();
+                spaceImage.src="space.jpg";
+
+                spaceshipImage=new Image();
+                spaceshipImage.src="spaceship1.png";
+
+                virusImage=new Image();
+                virusImage.src="virus.png";
+
+                enemyImage=new Image();
+                enemyImage.src="enemy.png";
+
+                gameoverImage=new Image();
+                gameoverImage.src="gameover.jpg";
+            }
+            
+            //if press the keys...
+            let keysDown={};
+
+            function setupKeyListener(){
+                document.addEventListener("keydown", function(event){
+                    console.log("Which key is pressed??", event.keyCode);
+                    keysDown[event.keyCode]=true;
+                });
+                document.addEventListener("keyup", function(event){
+                    delete keysDown[event.keyCode];
+                    if(event.keyCode==32){
+                        createVirus();//create a virus;
+                    }
+                });
+            }
+
+            //create a virus
+            function createVirus(){
+                let v=new Virus();
+                v.init();
+            }
+
+            //create enemies
+            function createEnemy(){
+                const interval=setInterval(function(){
+                    let e=new Enemy();
+                    e.init();
+                }, 500);
+
+            }
+
+            //the spaceship is moving both sides;
+            function update(){
+                if(37 in keysDown){
+                    spaceshipX-=5;
+                    if(spaceshipX<0){
+                        spaceshipX=0;
+                    }
+                }else if(39 in keysDown){
+                    spaceshipX+=5;
+                    if(spaceshipX>canvas.width-96){
+                        spaceshipX=canvas.width-96;
+                    }
+                }
+                for(let v=0; v<virusList.length; v++){
+                    if(virusList[v].alive){
+                    virusList[v].update();
+                    virusList[v].checkHit();
+                    }
+                }
+                for(let e=0; e<enemyList.length; e++){
+                    enemyList[e].update();
+                }
+            }
+
+            //render
+            function render(){
+                //canvas render
+                ctx.drawImage(spaceImage, 0, 0, canvas.width, canvas.height);
+                //spaceship render
+                ctx.drawImage(spaceshipImage, spaceshipX, spaceshipY);
+                //score render
+                ctx.fillText(`Score : ${score}`, 30, 30);
+                ctx.fillStyle="white";
+                ctx.font="30px Arial";
+                //virus render
+                for(let v=0; v<virusList.length; v++){
+                    ctx.drawImage(virusImage, virusList[v].x, virusList[v].y);
+                }
+                //enemy render
+                for(let e=0; e<enemyList.length; e++){
+                    ctx.drawImage(enemyImage, enemyList[e].x, enemyList[e].y);
+                }
+            }
+
+            //repeat image
+            function main(){
+                if(!gameOver){
+                update();
+                render();
+                requestAnimationFrame(main);
+                }else{
+                    ctx.drawImage(gameoverImage, 0, 0, 900, 400);
+                }
+            }
+
+            //call funcs.
+            loadImage();
+            setupKeyListener();
+            createEnemy();
+            main();
+        </script>
+    </body>
+</html>
